@@ -1,0 +1,20 @@
+# /etc/systemd/system/pcap-capture.service
+[Unit]
+Description=PCAP Capture Loop
+After=network.target
+
+[Service]
+User=john
+Group=john
+# Grants tcpdump raw socket access without running as root
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
+ExecStart=/bin/bash /home/john/safe-athens/pcap-capture/capture_loop.sh
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

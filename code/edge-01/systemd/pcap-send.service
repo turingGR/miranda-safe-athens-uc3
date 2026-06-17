@@ -1,0 +1,17 @@
+# /etc/systemd/system/pcap-send.service
+[Unit]
+Description=PCAP Send Loop
+After=network.target
+
+[Service]
+User=john
+Group=john
+ExecStart=/bin/bash /home/john/safe-athens/pcap-capture/send_loop.sh
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
