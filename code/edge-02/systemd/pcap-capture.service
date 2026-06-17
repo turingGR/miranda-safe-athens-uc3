@@ -1,0 +1,17 @@
+# /etc/systemd/system/pcap-capture.service
+[Unit]
+Description=PCAP Capture Loop
+After=network.target
+
+[Service]
+ExecStart=/home/john/safe-athens/pcap-capture/capture_loop.sh
+Restart=always
+RestartSec=5
+User=john
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pcap-capture
+
+[Install]
+WantedBy=multi-user.target
+
