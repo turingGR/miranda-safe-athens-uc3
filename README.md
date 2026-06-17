@@ -1,31 +1,25 @@
-# SAFE Athens — Παράδοση Pilot (κώδικας + επισκόπηση)
+# SAFE Athens — MIRANDA CDT (WP5 / UC3)
 
-Φάκελος παράδοσης προς συνεργάτη του έργου **MIRANDA CDT** (WP5 / UC3 — Safe Athens).
-Περιέχει τον πλήρη πηγαίο κώδικα του pilot και από τα τρία μηχανήματα, μαζί με μια
-συνοπτική επισκόπηση (λειτουργικά συστήματα, αρχιτεκτονική κλπ).
+A real-time IoT edge-to-server pilot. Two Raspberry Pi 5 edge nodes collect environmental sensor data and network traffic; a central server processes them and streams everything through Apache Kafka for downstream analysis and ML-based intrusion detection.
 
-## Περιεχόμενα
+## Repository layout
 
-- **`SAFE_Athens_Pilot_Review_EL.docx`** — Η επισκόπηση του pilot (στα Ελληνικά). Ξεκινήστε από εδώ.
-- **`code/server/`** — `server.py` (Flask ingest API, confluent-kafka), `requirements.txt`,
-  `start.sh` (tmux), `pcap-system/scripts/` (`pcap_merge_dedup_loop.sh`, `send_pcap_kafka.py`),
-  `kafka/config/safe-athens-server.properties` (KRaft).
-- **`code/edge-01/`** & **`code/edge-02/`** — `client/stream.py` (αισθητήρες + MJPEG + POST /ingest),
-  `pcap-capture/*.sh` (tcpdump capture & rsync send), `systemd/*.service`.
+- **`code/server/`** — `server.py` (Flask ingest API, confluent-kafka), `requirements.txt`, `start.sh` (tmux), `pcap-system/scripts/` (`pcap_merge_dedup_loop.sh`, `send_pcap_kafka.py`), `kafka/config/safe-athens-server.properties` (KRaft).
+- **`code/edge-01/`** & **`code/edge-02/`** — `client/stream.py` (sensors + MJPEG + POST /ingest), `pcap-capture/*.sh` (tcpdump capture & rsync send), `systemd/*.service`.
 
-## Μηχανήματα (συνοπτικά)
+## Machines
 
-| Κόμβος | IP | OS / Kernel | CPU |
-|---|---|---|---|
-| safe-athens-server | 192.168.2.8 | Ubuntu 24.04.4 LTS · 6.8.0-110 · x86_64 | Intel i5-12400 |
-| safe-athens-edge-01 | 192.168.2.9 | Raspberry Pi OS (Debian 13 trixie) · 6.12.62-rpi · aarch64 | Cortex-A76 (4 πυρήνες) |
-| safe-athens-edge-02 | 192.168.2.12 | Raspberry Pi OS (Debian 13 trixie) · 6.12.62-rpi · aarch64 | Cortex-A76 (4 πυρήνες) |
+| Node | OS / Kernel | CPU |
+|---|---|---|
+| server | Ubuntu 24.04.4 LTS · kernel 6.8.0-110 · x86_64 | Intel i5-12400 |
+| edge-01 | Raspberry Pi OS (Debian 13 trixie) · kernel 6.12.62-rpi · aarch64 | Cortex-A76 (4 cores) |
+| edge-02 | Raspberry Pi OS (Debian 13 trixie) · kernel 6.12.62-rpi · aarch64 | Cortex-A76 (4 cores) |
 
 Python: 3.13.5 (edge), 3.12.3 (server).
 
-## Kafka (data bus για τον consumer)
+## Kafka (data bus)
 
-Broker `192.168.2.8:9092` — PLAINTEXT (χωρίς auth/TLS), 4 topics, 3 partitions, RF=1.
+Single-node Apache Kafka 4.2.0 in KRaft mode, PLAINTEXT on port 9092, 4 topics, 3 partitions each, replication factor 1.
 
 | Topic | Format | Key | Producer |
 |---|---|---|---|
@@ -34,10 +28,8 @@ Broker `192.168.2.8:9092` — PLAINTEXT (χωρίς auth/TLS), 4 topics, 3 parti
 | `edge_alerts` | JSON | `node_id` | server.py (risk_score ≥ 40) |
 | `safe-athens-pcap` | Binary (512 KB chunks) | `file_id` | send_pcap_kafka.py |
 
-`safe-athens-pcap`: επανασυναρμολόγηση κατά `file_id`, σειρά κατά `chunk_index`, ολοκλήρωση στα `total_chunks` (headers: `file_id`, `filename`, `chunk_index`, `total_chunks`).
+`safe-athens-pcap`: reassemble by `file_id`, order by `chunk_index`, complete at `total_chunks` (message headers: `file_id`, `filename`, `chunk_index`, `total_chunks`).
 
-## Σημείωση
+## Note
 
-Τα δύο edge δεν τρέχουν ταυτόσημο `stream.py`: ο **edge-01** διαβάζει μόνο ένα αναλογικό
-κανάλι (A0) ως `air_quality` και δεν στέλνει `gas`· ο **edge-02** στέλνει `gas` (A0) και
-`air_quality` (A2). Λεπτομέρειες και λοιπές αποκλίσεις από την τεκμηρίωση: §7 του .docx.
+The two edge nodes do not run an identical `stream.py`: **edge-01** reads only one analog channel (A0) as `air_quality` and does not send a `gas` field, while **edge-02** sends both `gas` (A0) and `air_quality` (A2).
