@@ -1,0 +1,8 @@
+Flask
+opencv-python
+requests
+smbus2
+RPi.bme280
+gpiozero
+RPi.GPIO
+grove.py
